@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { GameCanvas } from "@/components/game/GameCanvas";
 import { TaskBar } from "@/components/game/TaskBar";
 import { CompletionModal } from "@/components/game/CompletionModal";
 import { createInitialState, findItem, isCompleted } from "@/lib/engine/game-state";
+import { unlockNextLevel } from "@/lib/unlock";
 import type { LevelData, GameState } from "@/lib/engine/types";
 
 export default function GamePage() {
@@ -43,6 +44,16 @@ export default function GamePage() {
     },
     [level]
   );
+
+  // Unlock next level when game is completed
+  const completed = isCompleted(gameState);
+  const didUnlock = useRef(false);
+  useEffect(() => {
+    if (completed && !didUnlock.current) {
+      didUnlock.current = true;
+      unlockNextLevel(level!.id);
+    }
+  }, [completed, level]);
 
   if (loading) {
     return (
