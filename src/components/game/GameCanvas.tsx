@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { Application, Sprite, Assets } from "pixi.js";
 import { findHitItem } from "@/lib/engine/hit-detection";
 import type { TargetItem } from "@/lib/engine/types";
@@ -26,15 +26,22 @@ export function GameCanvas({
   const onItemFoundRef = useRef(onItemFound);
   onItemFoundRef.current = onItemFound;
 
-  const handleClick = useCallback(
-    (x: number, y: number) => {
-      const index = findHitItem(x, y, GAME_SIZE, GAME_SIZE, targetItems, foundIndices);
-      if (index !== null) {
-        onItemFoundRef.current(index);
-      }
-    },
-    [targetItems, foundIndices]
-  );
+  // Store latest values in refs so handleClick stays stable
+  const targetItemsRef = useRef(targetItems);
+  targetItemsRef.current = targetItems;
+  const foundIndicesRef = useRef(foundIndices);
+  foundIndicesRef.current = foundIndices;
+
+  const handleClickRef = useRef((x: number, y: number) => {
+    const index = findHitItem(
+      x, y, GAME_SIZE, GAME_SIZE,
+      targetItemsRef.current,
+      foundIndicesRef.current
+    );
+    if (index !== null) {
+      onItemFoundRef.current(index);
+    }
+  });
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -48,6 +55,8 @@ export function GameCanvas({
         height: GAME_SIZE,
         backgroundAlpha: 0,
         antialias: true,
+        resolution: 1,
+        autoDensity: true,
       });
 
       if (destroyed || !containerRef.current) {
@@ -58,7 +67,6 @@ export function GameCanvas({
       containerRef.current.appendChild(app.canvas);
       appRef.current = app;
 
-      // Load scene texture
       const texture = await Assets.load(sceneImage);
       if (destroyed) {
         app.destroy(true);
@@ -73,9 +81,12 @@ export function GameCanvas({
       spriteRef.current = sprite;
 
       sprite.on("pointerdown", (event) => {
-        // event.getLocalPosition gives coordinates relative to the sprite
-        const pos = event.getLocalPosition(sprite);
-        handleClick(pos.x, pos.y);
+        // toLocal returns coords in texture space (0-2048)
+        // Normalize to display space (0-GAME_SIZE) for hit detection
+        const local = sprite.toLocal(event.global);
+        const displayX = (local.x / sprite.texture.width) * GAME_SIZE;
+        const displayY = (local.y / sprite.texture.height) * GAME_SIZE;
+        handleClickRef.current(displayX, displayY);
       });
 
       app.stage.addChild(sprite);
@@ -90,7 +101,7 @@ export function GameCanvas({
         appRef.current = null;
       }
     };
-  }, [sceneImage, handleClick]);
+  }, [sceneImage]);
 
   // Highlight found items — visual markers added in future iteration
   useEffect(() => {
