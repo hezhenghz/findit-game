@@ -77,6 +77,20 @@ export default function GamePage() {
     );
   }
 
+  if (!level.targetItems || level.targetItems.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p className="text-gray-500 text-lg">关卡数据不完整，请联系管理员。</p>
+        <button
+          onClick={() => router.push("/")}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+        >
+          返回首页
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center">
       {/* Header */}
