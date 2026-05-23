@@ -4,20 +4,22 @@ import { startPipeline } from "@/lib/ai/pipeline";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { keywords, itemType, itemCount, difficulty } = body;
+    const { difficulty } = body;
 
-    if (!keywords || !itemType || !itemCount || !difficulty) {
+    if (!difficulty || (!body.sceneDescription && !body.keywords)) {
       return NextResponse.json(
-        { error: "缺少必填字段：keywords, itemType, itemCount, difficulty" },
+        { error: "缺少必填字段：difficulty, sceneDescription（或 keywords）" },
         { status: 400 }
       );
     }
 
     const task = startPipeline({
-      keywords,
-      itemType,
-      itemCount: Math.min(Math.max(itemCount, 1), 10),
-      difficulty: Math.min(Math.max(difficulty, 1), 5),
+      keywords: body.keywords || "",
+      itemType: body.itemType || "",
+      itemCount: Math.min(Math.max(body.itemCount, 1), 10),
+      difficulty: Math.min(Math.max(body.difficulty, 1), 5),
+      sceneDescription: body.sceneDescription || "",
+      items: body.items || [],
     });
 
     return NextResponse.json({ taskId: task.id }, { status: 202 });

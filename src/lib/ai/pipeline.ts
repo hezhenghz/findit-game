@@ -9,6 +9,8 @@ export interface PipelineInput {
   itemType: string;
   itemCount: number;
   difficulty: number;
+  sceneDescription?: string;
+  items?: string[];
 }
 
 export function startPipeline(input: PipelineInput): Task {
@@ -26,12 +28,21 @@ export function startPipeline(input: PipelineInput): Task {
 async function runPipeline(task: Task, input: PipelineInput) {
   updateTask(task.id, { status: "processing", progress: "正在生成场景描述..." });
 
-  // Step 1: Expand keywords with DeepSeek
-  const { sceneDescription, items } = await expandKeywords(
-    input.keywords,
-    input.itemType,
-    input.itemCount
-  );
+  // Step 1: Expand keywords (skip if user already provided description + items)
+  let sceneDescription: string;
+  let items: string[];
+  if (input.sceneDescription && input.items?.length) {
+    sceneDescription = input.sceneDescription;
+    items = input.items;
+  } else {
+    const expanded = await expandKeywords(
+      input.keywords,
+      input.itemType,
+      input.itemCount
+    );
+    sceneDescription = expanded.sceneDescription;
+    items = expanded.items;
+  }
 
   updateTask(task.id, { progress: "正在生成 4 张场景底图..." });
 
