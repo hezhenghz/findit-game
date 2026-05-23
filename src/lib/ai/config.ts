@@ -9,11 +9,11 @@ export function getConfig() {
     volcanoApiKey: volcanoKey,
     deepseekApiKey: deepseekKey,
     seedreamBaseUrl:
-      "https://operator.las.cn-beijing.volces.com/api/v1/images/generations",
-    doubaoVisionBaseUrl: "https://ark.cn-beijing.volces.com/api/v3",
+      "https://ark.cn-beijing.volces.com/api/v3/images/generations",
+    doubaoVisionBaseUrl: "https://ark.cn-beijing.volces.com/api/v3/responses",
     deepseekBaseUrl: "https://api.deepseek.com",
-    seedreamModel: "doubao-seedream-4-5-251128",
-    doubaoVisionModel: "doubao-seed-2-0-lite-260215",
+    seedreamModel: "doubao-seedream-5-0-260128",
+    doubaoVisionModel: "doubao-seed-2-0-mini-260428",
     deepseekModel: "deepseek-chat",
   };
 }

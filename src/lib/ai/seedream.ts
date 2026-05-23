@@ -5,8 +5,6 @@ import { db } from "@/db";
 import { difficultyPresets } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-const IMAGE_SIZE = "2048x2048";
-
 interface GenerateImagesInput {
   sceneDescription: string;
   items: string[];
@@ -84,35 +82,41 @@ export async function generateImages(
     body: JSON.stringify({
       model: config.seedreamModel,
       prompt,
-      size: IMAGE_SIZE,
-      response_format: "url",
+      size: "2K",
+      output_format: "png",
       watermark: false,
-      sequential_image_generation: "auto",
     }),
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Seedream API error: ${response.status} ${text}`);
+    const errText = await response.text();
+    let errMsg = `Seedream API error: ${response.status}`;
+    try {
+      const err = JSON.parse(errText);
+      const code = err.error?.code || "";
+      const msg = err.error?.message || "";
+      errMsg += ` ${code} ${msg}`;
+    } catch {
+      errMsg += ` ${errText}`;
+    }
+    throw new Error(errMsg);
   }
 
-  const data = await response.json();
+  // Sync response: { data: [{ url, size }], usage: { generated_images } }
+  const result = await response.json();
+  const data = result.data || [];
 
-  // Seedream returns { data: [{ url: "..." }, ...] }
   const images: GeneratedImage[] = [];
-  const results = data.data || [];
-
   const dir = "public/levels";
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
 
-  for (let i = 0; i < results.length; i++) {
-    const imageUrl = results[i].url;
+  for (let i = 0; i < data.length; i++) {
+    const imageUrl = data[i].url as string;
     const localFilename = `generated_${Date.now()}_${i}.png`;
     const localPath = `/levels/${localFilename}`;
 
-    // Download image
     const imageResp = await fetch(imageUrl);
     if (!imageResp.ok) {
       throw new Error(`Failed to download image ${i}: ${imageResp.status}`);
